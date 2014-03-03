@@ -2,6 +2,8 @@ package com.example.beepandroid;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.os.Bundle;
 import android.os.Debug;
@@ -21,6 +23,8 @@ public class MainActivity extends Activity {
 
 	Spinner fileListSpinner;
 	TextView output;
+	String outputMessage = "No monitor has been started yet.";
+	Timer timer;
 	ArrayList<String> files = new ArrayList<String>();
 	BeepBeepThread monitorThread;
 	
@@ -33,11 +37,24 @@ public class MainActivity extends Activity {
         output = (TextView) findViewById(R.id.textView1);
         
         initializeFileList();
-        monitorThread = new BeepBeepThread(output);
-        Thread t = new Thread(monitorThread);
-        t.start();
+        
+	    timer = new Timer();
+	    timer.schedule(new TimerTask() {
+	      @Override
+	      public void run() {
+	      	try{
+	      		runOnUiThread(new Runnable(){
+	      			public void run(){
+	      				output.setText(outputMessage);
+	    	       		output.invalidate();
+	      			}
+	      		});
+	       	}catch(Exception e){
+	       		e.printStackTrace();
+	       	}
+	      }
+	    }, 0, 100);
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -68,24 +85,26 @@ public class MainActivity extends Activity {
     public void buttonClicked(View v){
     	Button bouton = (Button) v;
     	
-    	
     	if(bouton.getText().equals("Start")){
     		bouton.setText("Stop");
-    		monitorThread.changeSpec((String)fileListSpinner.getSelectedItem());
-    		monitorThread.pause();
+            monitorThread = new BeepBeepThread(this);
+            monitorThread.changeSpec((String)fileListSpinner.getSelectedItem());
+            Thread t = new Thread(monitorThread);
+            t.start();
     		fileListSpinner.setEnabled(false);
     		Toast.makeText(this, "Monitor started", Toast.LENGTH_LONG).show();
     	}
     	else{
     		bouton.setText("Start");
-    		monitorThread.unPause();
+    		monitorThread.stopBeepBeep();
+    		monitorThread.interrupt();
     		fileListSpinner.setEnabled(true);
     		Toast.makeText(this, "Monitor stopped", Toast.LENGTH_LONG).show();
     	}
     }
     
     public void changeOutput(String out){
-    	output.setText(out);
+    	outputMessage = out;
     }
     
 }

@@ -21,14 +21,15 @@ import ca.uqac.info.monitor.MonitorFactory;
 import ca.uqac.info.util.FileReadWrite;
 import ca.uqac.info.monitor.frontend.EventNotifier;
 
-public class BeepBeepThread extends Activity implements Runnable {
+public class BeepBeepThread extends Thread {
 	boolean pause = true;
 	String spec;
-	TextView output;
+	MainActivity parent;
+	ServerSocket serverSocket = null;
 	ArrayList<CommunicationThread> clients = new ArrayList<CommunicationThread>();
 	
-	public BeepBeepThread(TextView output){
-		this.output = output;
+	public BeepBeepThread(MainActivity parent){
+		this.parent = parent;
 	}
 	
 	private class CommunicationThread extends Thread{
@@ -37,8 +38,6 @@ public class BeepBeepThread extends Activity implements Runnable {
 		TextView output;
 		boolean pause = false;
 		public CommunicationThread (Socket socket){
-			output = (TextView) findViewById(R.id.textView1);
-			output.setText("TEST55");
 			clientSocket = socket;
 			try{
 				this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
@@ -50,6 +49,7 @@ public class BeepBeepThread extends Activity implements Runnable {
 		public void run(){
 			try
 			{
+			  parent.changeOutput("In CommunicationThread.run");
 			  EventNotifier en = new EventNotifier(true);
 			  MonitorFactory mf = new MonitorFactory();
 			  String formula_contents = FileReadWrite.readFile(Environment.getExternalStorageDirectory().getPath() + "/Documents/ltlfo/" + spec);
@@ -73,7 +73,6 @@ public class BeepBeepThread extends Activity implements Runnable {
 
 			
 			while(true){
-				//parent.changeOutput("TEST1");
 				try{
 					
 					Thread.sleep(1000);
@@ -81,8 +80,7 @@ public class BeepBeepThread extends Activity implements Runnable {
 						Thread.sleep(1000);
 					}
 					else{
-						//String line = input.readLine();
-						//parent.changeOutput("monitor started");
+						String line = input.readLine();
 					}
 				} catch(Exception e){
 					e.printStackTrace();
@@ -96,7 +94,6 @@ public class BeepBeepThread extends Activity implements Runnable {
 	}
 	
 	public void run(){
-		ServerSocket serverSocket = null;
 		Socket socket = null;
 		try{
 			serverSocket = new ServerSocket(6000);
@@ -107,10 +104,10 @@ public class BeepBeepThread extends Activity implements Runnable {
 				socket = serverSocket.accept();
 				CommunicationThread ct = new CommunicationThread(socket);
 				clients.add(ct);
-				runOnUiThread(ct);
-////				if(pause){
-////					ct.pause();
-////				}
+				ct.start();
+				if(pause){
+					ct.pause();
+				}
 			} catch (IOException e){
 				e.printStackTrace();
 			}
@@ -120,6 +117,14 @@ public class BeepBeepThread extends Activity implements Runnable {
 		this.spec = filename;
 	}
 	
+	public void stopBeepBeep(){
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	public void pause(){
 		pause = true;
 		for(CommunicationThread c: clients){
