@@ -92,24 +92,6 @@ public class PipeReader implements Runnable
   public static final int ERR_EOF = 2;  // Encountered EOF (for a file)
   public static final int ERR_EOT = 3;  // Encountered EOT (for a pipe)
 
-  /**
-   * Simple main loop, used for testing that displays tokens to the screen
-   * @param args
-   */
-  public static void main(String[] args)
-  {
-    String pipe_filename = "/tmp/mapipe"; // This must be created first with mkfifo
-    PipeReader pr = new PipeReader(pipe_filename, new PipeReader.SimpleCallback());
-    Thread th = new Thread(pr);
-    System.out.println("Starting reader, type quit to quit...");
-    th.start();
-    Scanner sc = new Scanner(System.in, "UTF-8");
-    sc.next();
-    System.out.println("Terminated");
-    th.interrupt();
-    System.exit(0);
-  }
-
   public PipeReader()
   {
     super();
@@ -219,10 +201,10 @@ public class PipeReader implements Runnable
           }
           m_tokenBuffer.append(char_array);
           
-          //m_bufferedContents.append((char)c);
           String tok = m_tokenBuffer.nextToken();
-          while (!tok.isEmpty())
+          while (!tok.equals(""))
           {
+        	  
             if (m_callback != null)
             {
               m_callback.notify(tok, m_fis.available());

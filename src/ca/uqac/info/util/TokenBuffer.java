@@ -54,6 +54,7 @@ public class TokenBuffer
   public String nextToken()
   {
     String s = m_bufferedContents.toString();
+    System.out.println("Blala");
     int index = s.indexOf(m_separatorEnd);
     if (index < 0)
     {

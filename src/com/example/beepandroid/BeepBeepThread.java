@@ -19,6 +19,7 @@ import ca.uqac.info.ltl.Operator;
 import ca.uqac.info.monitor.Monitor;
 import ca.uqac.info.monitor.MonitorFactory;
 import ca.uqac.info.util.FileReadWrite;
+import ca.uqac.info.util.PipeReader;
 import ca.uqac.info.monitor.frontend.EventNotifier;
 
 public class BeepBeepThread extends Thread {
@@ -47,10 +48,11 @@ public class BeepBeepThread extends Thread {
 		}
 		
 		public void run(){
+			EventNotifier en = new EventNotifier(true);
+			PipeReader pr;
 			try
 			{
 			  parent.changeOutput("In CommunicationThread.run");
-			  EventNotifier en = new EventNotifier(true);
 			  MonitorFactory mf = new MonitorFactory();
 			  String formula_contents = FileReadWrite.readFile(Environment.getExternalStorageDirectory().getPath() + "/Documents/ltlfo/" + spec);
 			  Operator op = Operator.parseFromString(formula_contents);
@@ -59,6 +61,11 @@ public class BeepBeepThread extends Thread {
 			  Map<String,String> metadata = getMetadata(formula_contents);
 			  metadata.put("Filename", spec);
 			  en.addMonitor(mon, metadata);
+			  pr = new PipeReader(clientSocket.getInputStream(), en, false);
+			  pr.setSeparator("message", null);
+			  en.reset();
+			  Thread th = new Thread(pr);
+			  th.start();
 			}
 			catch (IOException e)
 			{
@@ -74,13 +81,14 @@ public class BeepBeepThread extends Thread {
 			
 			while(true){
 				try{
-					
+					parent.changeOutput(en.formatVerdicts());
+					System.out.println("Verdict: " + en.formatVerdicts());
 					Thread.sleep(1000);
 					if(pause){
 						Thread.sleep(1000);
 					}
 					else{
-						String line = input.readLine();
+						
 					}
 				} catch(Exception e){
 					e.printStackTrace();
@@ -165,28 +173,3 @@ public class BeepBeepThread extends Thread {
 	    return out_map;
 	  }
 }
-// From BeepBeepMonitor
-// Could be used to start monitor
-/*
-try
-{
-  //MonitorFactory mf = new MonitorFactory();
-  String formula_contents = FileReadWrite.readFile(formula_filename);
-  Operator op = Operator.parseFromString(formula_contents);
-  op.accept(mf);
-  Monitor mon = mf.getMonitor();
-  Map<String,String> metadata = getMetadata(formula_contents);
-  metadata.put("Filename", formula_filename);
-  en.addMonitor(mon, metadata);
-}
-catch (IOException e)
-{
-  e.printStackTrace();
-  System.exit(ERR_IO);
-}
-catch (Operator.ParseException e)
-{
-  System.err.println("Error parsing input formula");
-  System.exit(ERR_PARSE);
-}
-*/
