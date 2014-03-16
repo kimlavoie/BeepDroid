@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.os.Debug;
 import android.os.Environment;
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -105,6 +107,22 @@ public class MainActivity extends Activity {
     
     public void changeOutput(String out){
     	outputMessage = out;
+    }
+    
+    public void notify(String caption, String notification){
+    	NotificationCompat.Builder mBuilder =
+    		    new NotificationCompat.Builder(this)
+    		    .setSmallIcon(R.drawable.ic_launcher)
+    		    .setContentTitle("Verdict for " + caption + ":")
+    		    .setContentText(notification);
+    	// Sets an ID for the notification
+    	int mNotificationId = 001;
+    	// Gets an instance of the NotificationManager service
+    	NotificationManager mNotifyMgr = 
+    	        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    	// Builds the notification and issues it.
+    	mNotifyMgr.notify(mNotificationId, mBuilder.build());
+    	
     }
     
 }

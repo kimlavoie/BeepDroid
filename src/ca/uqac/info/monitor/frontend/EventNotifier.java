@@ -1,6 +1,6 @@
 /*
 	BeepBeep, an LTL-FO+ runtime monitor with XML events
-	Copyright (C) 2008-2013 Sylvain Hallé
+	Copyright (C) 2008-2013 Sylvain HallÃ©
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -254,7 +254,7 @@ public class EventNotifier implements PipeCallback<String>
       Map<String,String> metadata = mi.m_metadata;
       String caption = metadata.get("Caption");
       if (caption == null || caption.equals(""))
-        System.err.print("· ");
+        System.err.print("Â· ");
       else
         System.err.print(caption + " ");  
     }
@@ -275,7 +275,7 @@ public class EventNotifier implements PipeCallback<String>
       if (v == Monitor.Verdict.INCONCLUSIVE)
         out.append("?");
       else if (v == Monitor.Verdict.TRUE)
-        out.append("⊤");
+        out.append("T");
       else if (v == Monitor.Verdict.FALSE)
         out.append("⊥");
       // We just pad the output with spaces to align with the length of the monitor's caption

@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.os.Environment;
+import android.support.v4.app.NotificationCompat;
 import android.widget.TextView;
 
 import ca.uqac.info.ltl.Operator;
@@ -50,6 +51,7 @@ public class BeepBeepThread extends Thread {
 		public void run(){
 			EventNotifier en = new EventNotifier(true);
 			PipeReader pr;
+			String caption = "";
 			try
 			{
 			  parent.changeOutput("In CommunicationThread.run");
@@ -59,6 +61,7 @@ public class BeepBeepThread extends Thread {
 			  op.accept(mf);
 			  Monitor mon = mf.getMonitor();
 			  Map<String,String> metadata = getMetadata(formula_contents);
+			  caption = metadata.get("Caption");
 			  metadata.put("Filename", spec);
 			  en.addMonitor(mon, metadata);
 			  pr = new PipeReader(clientSocket.getInputStream(), en, false);
@@ -78,11 +81,15 @@ public class BeepBeepThread extends Thread {
 			  System.exit(-2);
 			}
 
-			
+			String verdict = en.formatVerdicts();
+			parent.changeOutput(verdict);
 			while(true){
 				try{
-					parent.changeOutput(en.formatVerdicts());
-					System.out.println("Verdict: " + en.formatVerdicts());
+					if(!en.formatVerdicts().equals(verdict)){
+						verdict = en.formatVerdicts();
+						parent.notify(caption,verdict);
+						parent.changeOutput(verdict);
+					}
 					Thread.sleep(1000);
 					if(pause){
 						Thread.sleep(1000);
