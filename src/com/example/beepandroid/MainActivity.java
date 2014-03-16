@@ -110,11 +110,13 @@ public class MainActivity extends Activity {
     }
     
     public void notify(String caption, String notification){
+    	long[] vibration = {0, 1000};
     	NotificationCompat.Builder mBuilder =
     		    new NotificationCompat.Builder(this)
     		    .setSmallIcon(R.drawable.ic_launcher)
     		    .setContentTitle("Verdict for " + caption + ":")
-    		    .setContentText(notification);
+    		    .setContentText(notification)
+    		    .setVibrate(vibration);
     	// Sets an ID for the notification
     	int mNotificationId = 001;
     	// Gets an instance of the NotificationManager service
