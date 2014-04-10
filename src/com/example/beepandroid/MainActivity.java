@@ -23,6 +23,7 @@ import android.widget.ToggleButton;
 
 public class MainActivity extends Activity {
 
+	final int TIMER_TICKS = 1;
 	Spinner fileListSpinner;
 	TextView output;
 	String outputMessage = "No monitor has been started yet.";
@@ -35,11 +36,13 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
+        //gain access to our ressources
         fileListSpinner = (Spinner) findViewById(R.id.FileList);
         output = (TextView) findViewById(R.id.textView1);
         
         initializeFileList();
         
+        //timer to update the TextView at each TIMER_TICKS time
 	    timer = new Timer();
 	    timer.schedule(new TimerTask() {
 	      @Override
@@ -55,7 +58,7 @@ public class MainActivity extends Activity {
 	       		e.printStackTrace();
 	       	}
 	      }
-	    }, 0, 100);
+	    }, 0, TIMER_TICKS);
     }
 
     @Override
@@ -66,6 +69,9 @@ public class MainActivity extends Activity {
     }
     
     public void initializeFileList(){
+    	/**
+    	 * Check for ltlfo directory and show the list of available files (ending with ltlfo extension)
+    	 */
     	File ltlfoDir = new File(Environment.getExternalStorageDirectory().getPath() + "/Documents/ltlfo");
     	if(!ltlfoDir.exists()){
     		System.out.println("The ltlfo directory doesn't exist!!!");
@@ -85,6 +91,13 @@ public class MainActivity extends Activity {
     }
     
     public void buttonClicked(View v){
+    	/**
+    	 * Switch between activated state and deactivated state
+    	 * Deactivated -> activated = create a monitor thread with spec selected
+    	 * 		and switch button state
+    	 * Activated -> Deactivated = stop listening on port, interrupt thread
+    	 * 		and switch button state
+    	 */
     	Button bouton = (Button) v;
     	
     	if(bouton.getText().equals("Start")){
@@ -106,10 +119,20 @@ public class MainActivity extends Activity {
     }
     
     public void changeOutput(String out){
+    	/**
+    	 * Change the TextView string output. We change only this variable,
+    	 * 		which will be used to update the TextView when a timer
+    	 * 		is ready.
+    	 */
     	outputMessage = out;
     }
     
     public void notify(String caption, String notification){
+    	/**
+    	 * Notify system with the caption and notification message.
+    	 * Used primarily when monitor state change (from inconclusive
+    	 * 		to true or false)
+    	 */
     	long[] vibration = {0, 1000};
     	NotificationCompat.Builder mBuilder =
     		    new NotificationCompat.Builder(this)

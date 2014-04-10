@@ -1,6 +1,9 @@
 package com.example.beepandroid;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
@@ -31,84 +34,13 @@ public class BeepBeepThread extends Thread {
 	ArrayList<CommunicationThread> clients = new ArrayList<CommunicationThread>();
 	
 	public BeepBeepThread(MainActivity parent){
-		this.parent = parent;
-	}
-	
-	private class CommunicationThread extends Thread{
-		Socket clientSocket;
-		BufferedReader input;
-		TextView output;
-		boolean pause = false;
-		public CommunicationThread (Socket socket){
-			clientSocket = socket;
-			try{
-				this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-			}catch(Exception e){
-				e.printStackTrace();
-			}
-		}
-		
-		public void run(){
-			EventNotifier en = new EventNotifier(true);
-			PipeReader pr;
-			String caption = "";
-			try
-			{
-			  parent.changeOutput("In CommunicationThread.run");
-			  MonitorFactory mf = new MonitorFactory();
-			  String formula_contents = FileReadWrite.readFile(Environment.getExternalStorageDirectory().getPath() + "/Documents/ltlfo/" + spec);
-			  Operator op = Operator.parseFromString(formula_contents);
-			  op.accept(mf);
-			  Monitor mon = mf.getMonitor();
-			  Map<String,String> metadata = getMetadata(formula_contents);
-			  caption = metadata.get("Caption");
-			  metadata.put("Filename", spec);
-			  en.addMonitor(mon, metadata);
-			  pr = new PipeReader(clientSocket.getInputStream(), en, false);
-			  pr.setSeparator("message", null);
-			  en.reset();
-			  Thread th = new Thread(pr);
-			  th.start();
-			}
-			catch (IOException e)
-			{
-			  e.printStackTrace();
-			  System.exit(-32);
-			}
-			catch (Operator.ParseException e)
-			{
-			  System.err.println("Error parsing input formula");
-			  System.exit(-2);
-			}
-
-			String verdict = en.formatVerdicts();
-			parent.changeOutput(verdict);
-			while(true){
-				try{
-					if(!en.formatVerdicts().equals(verdict)){
-						verdict = en.formatVerdicts();
-						parent.notify(caption,verdict);
-						parent.changeOutput(verdict);
-					}
-					Thread.sleep(1000);
-					if(pause){
-						Thread.sleep(1000);
-					}
-					else{
-						
-					}
-				} catch(Exception e){
-					e.printStackTrace();
-				}
-			}
-			
-		}
-		
-		public void pause(){pause = true;}
-		public void unpause(){pause = false;}
+		this.parent = parent;	//to update the TextView
 	}
 	
 	public void run(){
+		/**
+		 * Start listening for socket connections
+		 */
 		Socket socket = null;
 		try{
 			serverSocket = new ServerSocket(6000);
@@ -154,6 +86,10 @@ public class BeepBeepThread extends Thread {
 	}
 	
 	public static Map<String,String> getMetadata(String fileContents)
+	  /**
+	   * From BeepBeep, to parse metadatas
+	   * (I don't understand all of it, so I just copied it here)
+	   */
 	  {
 	    Map<String,String> out_map = new HashMap<String,String>();
 	    StringBuilder comment_contents = new StringBuilder();
@@ -179,4 +115,96 @@ public class BeepBeepThread extends Thread {
 	    }
 	    return out_map;
 	  }
+	
+	private class CommunicationThread extends Thread{
+		/**
+		 * Called to establish communication between distance source and the monitor
+		 */
+		Socket clientSocket;
+		BufferedReader input;
+		TextView output;
+		boolean pause = false;
+		
+		public CommunicationThread (Socket socket){
+			clientSocket = socket;
+			try{
+				this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
+		
+		public void run(){
+			/**
+			 * Start listening for events and update things accordingly
+			 */
+			/* ******************************** From BeepBeep, with some minor modifications ***************************************/
+			EventNotifier en = new EventNotifier(true);
+			PipeReader pr;
+			String caption = "";
+			try
+			{
+			  parent.changeOutput("In CommunicationThread.run");
+			  MonitorFactory mf = new MonitorFactory();
+			  String formula_contents = FileReadWrite.readFile(Environment.getExternalStorageDirectory().getPath() + "/Documents/ltlfo/" + spec);
+			  Operator op = Operator.parseFromString(formula_contents);
+			  op.accept(mf);
+			  Monitor mon = mf.getMonitor();
+			  Map<String,String> metadata = getMetadata(formula_contents);
+			  caption = metadata.get("Caption");
+			  metadata.put("Filename", spec);
+			  en.addMonitor(mon, metadata);
+			  pr = new PipeReader(clientSocket.getInputStream(), en, false);
+			  pr.setSeparator("message", null);
+			  en.reset();
+			  Thread th = new Thread(pr);
+			  th.start();
+			}
+			catch (IOException e)
+			{
+			  e.printStackTrace();
+			  System.exit(-32);
+			}
+			catch (Operator.ParseException e)
+			{
+			  System.err.println("Error parsing input formula");
+			  System.exit(-2);
+			}
+			/* ********************************************************************************************************************/
+			
+			//Check for verdict change and update TextView accordingly
+			String verdict = en.formatVerdicts();
+			parent.changeOutput(verdict);
+			EventNotifier.MonitorInfo infos = en.getMonitorInfo(0);
+			long nb_mes = infos.m_numEvents;
+			while(true){
+				try{
+					
+					if(infos.m_numEvents != nb_mes){
+				    	String message = 	en.formatVerdicts() + "\n" +
+				    						"Cumulative time: " + infos.m_cumulativeTime + "\n" +
+				    						"Nb mess.: " + infos.m_numEvents + "\n" +
+				    						"Time by mess.: " + (infos.m_cumulativeTime / infos.m_numEvents);
+				    	if(!en.formatVerdicts().equals(verdict)){
+							parent.notify(caption,message);
+							verdict = en.formatVerdicts();
+				    	}
+						parent.changeOutput(message);
+					}
+					if(pause){
+						Thread.sleep(1000);
+					}
+					else{
+						
+					}
+				} catch(Exception e){
+					e.printStackTrace();
+				}
+			}
+			
+		}
+		
+		public void pause(){pause = true;}
+		public void unpause(){pause = false;}
+	}
 }
