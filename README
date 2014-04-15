@@ -1,5 +1,13 @@
 Android port of the BeepBeep monitor.
 
+Listen for trace on port 6000.
+
+Ltlfo files must be in the directory:
+	$(external storage root)/Documents/ltlfo/
+	
+This software is under the GPLv3 license:
+	http://www.gnu.org/licenses/gpl-3.0.html
+
 Authors:
 Sylvain Hallé
 Kim Lavoie
